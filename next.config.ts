@@ -1,7 +1,10 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
-  /* config options here */
-};
-
-export default nextConfig;
+// next.config.js
+module.exports = {
+  reactStrictMode: true,
+  experimental: {
+    appDir: true, // Habilita la nueva estructura de carpetas
+  },
+  images: {
+    domains: ['res.cloudinary.com', 'www.starbucks.es', 'www.starbucks.pe'], // Permite imágenes externas
+  },
+}
