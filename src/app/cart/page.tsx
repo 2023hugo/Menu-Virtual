@@ -7,6 +7,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
+import { User } from '@supabase/supabase-js';
 
 // Hook para debouncing
 const useDebouncedValue = (value: string | null, delay: number) => {
@@ -42,6 +43,8 @@ type Restaurante = {
   mensaje_bienvenida?: string;
 };
 
+type ProductoConCantidad = Producto & { cantidad: number };
+
 export default function CartaPage() {
   const router = useRouter();
   const [productos, setProductos] = useState<Producto[]>([]);
@@ -50,11 +53,10 @@ export default function CartaPage() {
   const [restaurante, setRestaurante] = useState<Restaurante | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [user, setUser] = useState<any>(null);
-  const [carrito, setCarrito] = useState<any[]>([]);
+  const [user, setUser] = useState<User | null>(null);
+  const [carrito, setCarrito] = useState<ProductoConCantidad[]>([]);
   const [mesaSeleccionada, setMesaSeleccionada] = useState<string>('');
 
-  // Verificar si el usuario está logueado
   useEffect(() => {
     const fetchUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -78,8 +80,12 @@ export default function CartaPage() {
         setCategorias(categoriasUnicas);
         setRestaurante(restData);
         setLoading(false);
-      } catch (error: any) {
-        setError(error.message || 'Hubo un problema al cargar los datos.');
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          setError(error.message);
+        } else {
+          setError('Hubo un problema al cargar los datos.');
+        }
         setLoading(false);
       }
     };
@@ -88,7 +94,6 @@ export default function CartaPage() {
     fetchDatos();
   }, [router]);
 
-  // Usar el valor debounced para filtrar productos
   const debouncedCategoria = useDebouncedValue(categoriaSeleccionada, 300);
 
   const productosFiltrados = debouncedCategoria
@@ -106,7 +111,7 @@ export default function CartaPage() {
       );
       setCarrito(nuevoCarrito);
     } else {
-      const nuevoProducto = { ...producto, cantidad: 1 };
+      const nuevoProducto: ProductoConCantidad = { ...producto, cantidad: 1 };
       setCarrito([...carrito, nuevoProducto]);
     }
     alert('✅ Producto agregado a tu carrito');
@@ -122,7 +127,6 @@ export default function CartaPage() {
     router.push('/');
   };
 
-  // Guardar carrito en localStorage cuando cambia
   useEffect(() => {
     localStorage.setItem('carrito', JSON.stringify(carrito));
   }, [carrito]);
@@ -189,7 +193,6 @@ export default function CartaPage() {
 
       {/* Contenido principal */}
       <div className="w-full sm:w-4/5 p-4">
-        {/* Header */}
         <header className="bg-green-800 text-white p-6 text-center shadow-md relative">
           <h1 className="text-4xl font-bold">{restaurante?.nombre || 'Mi Restaurante'}</h1>
           {restaurante?.mensaje_bienvenida && (
@@ -197,7 +200,6 @@ export default function CartaPage() {
           )}
         </header>
 
-        {/* Seleccionar mesa */}
         <div className="my-4">
           <label htmlFor="mesa" className="block text-lg font-medium">Seleccione la mesa:</label>
           <input
@@ -210,7 +212,6 @@ export default function CartaPage() {
           />
         </div>
 
-        {/* Productos */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
           {productosFiltrados.map((producto) => (
             <div
@@ -245,7 +246,6 @@ export default function CartaPage() {
           ))}
         </div>
 
-        {/* Botones flotantes para ver el carrito */}
         <div className="fixed bottom-6 right-6 flex flex-col gap-3 z-50">
           <button
             onClick={verCarrito}
